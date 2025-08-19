@@ -1,7 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import requests
-import mysql.connector
+import psycopg2
+import os
 
 app = FastAPI()
 
@@ -12,41 +13,28 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 # Cohere v2 Chat API endpoint
 COHERE_URL = "https://api.cohere.ai/v2/chat"
-COHERE_API_KEY = "xPn6OZ8TLcWsjtI1aKJBo6ZkwS1GZIuudd1daZc2"  
+COHERE_API_KEY = os.environ.get("COHERE_API_KEY")  # store in Render environment variable
 
-
-db_server = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password=""
-)
-cursor_server = db_server.cursor()
-cursor_server.execute("CREATE DATABASE IF NOT EXISTS ai_chat_db")
-cursor_server.close()
-db_server.close()
-# ---------- MySQL Setup ----------
-db = mysql.connector.connect(
-    host="localhost",
-    user="root",          # your MySQL username
-    password="",  # your MySQL password
-    database="ai_chat_db"
+# ---------- PostgreSQL Setup ----------
+db = psycopg2.connect(
+    host=os.environ.get("DB_HOST"),
+    user=os.environ.get("DB_USER"),
+    password=os.environ.get("DB_PASSWORD"),
+    dbname=os.environ.get("DB_NAME")
 )
 cursor = db.cursor()
 
-
-
-
-
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS ai_responses (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     user_prompt TEXT,
     ai_response TEXT
 )
 """)
-
+db.commit()
 
 # ---------- API Endpoint ----------
 @app.post("/generate")
@@ -68,7 +56,7 @@ def chat_with_ai(prompt: str):
         data = response.json()
         ai_response = data["message"]["content"][0]["text"]
 
-        # Save into MySQL
+        # Save into PostgreSQL
         cursor.execute(
             "INSERT INTO ai_responses (user_prompt, ai_response) VALUES (%s, %s)",
             (prompt, ai_response)
