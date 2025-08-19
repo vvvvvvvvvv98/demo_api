@@ -171,9 +171,10 @@
             responseArea.innerHTML = "⏳ Generating";
 
             try {
-                const res = await fetch("http://127.0.0.1:8000/generate?prompt=" + encodeURIComponent(prompt), {
+                const res = await fetch("https://demo-api-backend.onrender.com/generate?prompt=" + encodeURIComponent(prompt), {
                     method: "POST"
                 });
+
                 const data = await res.json();
 
                 if (data.response) {
@@ -186,6 +187,37 @@
             }
 
             sendBtn.disabled = false;
+        });
+        e.preventDefault();
+
+        const prompt = document.getElementById("prompt").value;
+        const responseArea = document.getElementById("responseArea");
+        const sendBtn = document.getElementById("send");
+
+        if (!prompt.trim()) {
+            responseArea.innerHTML = "⚠️ Please Enter a Prompt";
+            return;
+        }
+
+        sendBtn.disabled = true;
+        responseArea.innerHTML = "⏳ Generating";
+
+        try {
+            const res = await fetch("http://127.0.0.1:8000/generate?prompt=" + encodeURIComponent(prompt), {
+                method: "POST"
+            });
+            const data = await res.json();
+
+            if (data.response) {
+                responseArea.innerHTML = data.response;
+            } else {
+                responseArea.innerHTML = "⚠️ Error: " + JSON.stringify(data);
+            }
+        } catch (err) {
+            responseArea.innerHTML = "Error: " + err;
+        }
+
+        sendBtn.disabled = false;
         });
     </script>
 </body>
